@@ -27,6 +27,7 @@ under development.
 1. Clone olympia
    ```
    git clone --recursive git@github.com:riscv-software-src/riscv-perf-model.git
+   git submodule update --recursive --init
    ```
 1. Build Olympia in the new `conda` environment created
 
