@@ -42,8 +42,6 @@ if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
   setup_stf_linker(false)
 endif()
 
-
-
 # Use ccache if installed
 find_program (CCACHE_PROGRAM ccache)
 if (CCACHE_PROGRAM)
@@ -65,9 +63,10 @@ include_directories (core mss sim)
 include_directories (SYSTEM mavis)
 include_directories (SYSTEM stf_lib)
 
-# The Core, MSS, and the simulator
-add_subdirectory(core)
-add_subdirectory(mss)
+# Mavis, the Core, MSS, and the simulator
+add_subdirectory (mavis)
+add_subdirectory (core)
+add_subdirectory (mss)
 
 # Add STF library to the build
 add_subdirectory (${STF_LIB_BASE})
@@ -80,7 +79,7 @@ add_executable(olympia
   sim/OlympiaSim.cpp
   sim/main.cpp
   )
-target_link_libraries (olympia core mss SPARTA::sparta ${STF_LINK_LIBS})
+target_link_libraries (olympia core mss SPARTA::sparta mavis ${STF_LINK_LIBS})
 if (CMAKE_BUILD_TYPE MATCHES "^[Rr]elease")
   target_compile_options (core    PUBLIC -flto)
   target_compile_options (mss     PUBLIC -flto)
@@ -93,3 +92,30 @@ file(CREATE_LINK ${PROJECT_SOURCE_DIR}/reports    ${CMAKE_CURRENT_BINARY_DIR}/re
 file(CREATE_LINK ${PROJECT_SOURCE_DIR}/arches     ${CMAKE_CURRENT_BINARY_DIR}/arches          SYMBOLIC)
 file(CREATE_LINK ${PROJECT_SOURCE_DIR}/mavis/json ${CMAKE_CURRENT_BINARY_DIR}/mavis_isa_files SYMBOLIC)
 file(CREATE_LINK ${PROJECT_SOURCE_DIR}/traces     ${CMAKE_CURRENT_BINARY_DIR}/traces          SYMBOLIC)
+
+if(NOT CLANGFORMAT_EXECUTABLE)
+  set(CLANGFORMAT_EXECUTABLE clang-format)
+endif()
+
+# CPUTopology is pretty clean as it is.  There's an option to NOT
+# collapse the array of structures in clang-format v16, but we're not
+# there yet
+add_custom_target(clangformat
+  find core mss -name "*.[hc]pp" | grep -v CPUTopology > clang-format-files.out
+  COMMAND
+     ${CLANGFORMAT_EXECUTABLE} -i --files=clang-format-files.out
+  WORKING_DIRECTORY
+     ${CMAKE_SOURCE_DIR}
+  COMMENT
+     "Formatting ${prefix} with ${CLANGFORMAT_EXECUTABLE} ..."
+  )
+
+add_custom_target(clangformat-check
+  find core mss -name "*.[hc]pp" | grep -v CPUTopology > clang-format-files.out
+  COMMAND
+     ${CLANGFORMAT_EXECUTABLE} --Werror -n --files=clang-format-files.out
+  WORKING_DIRECTORY
+     ${CMAKE_SOURCE_DIR}
+  COMMENT
+     "Formatting ${prefix} with ${CLANGFORMAT_EXECUTABLE} ..."
+  )
